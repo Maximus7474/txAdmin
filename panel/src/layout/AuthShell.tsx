@@ -1,19 +1,26 @@
-import { Link, Route, Switch } from "wouter";
+import { /* Link, */ Route, Switch } from "wouter";
 import Login from "../pages/auth/Login";
 import CfxreCallback from "../pages/auth/CfxreCallback";
 import AddMasterPin from "../pages/auth/AddMasterPin";
 import AddMasterCallback from "../pages/auth/AddMasterCallback";
 import { Card } from "../components/ui/card";
-import { LogoFullSquareGreen } from "@/components/Logos";
-import { useTheme } from "@/hooks/theme";
-import { handleExternalLinkClick } from "@/lib/utils";
+// import { LogoFullSquareGreen } from "@/components/Logos";
+// import { useTheme } from "@/hooks/theme";
+// import { handleExternalLinkClick } from "@/lib/utils";
 
 
 export default function AuthShell() {
-    return (
-        <div className="min-h-screen flex items-center justify-center">
+    return (<div
+            className="min-h-screen flex items-center justify-center"
+            id="AuthShellDiv"
+            style={{
+                background: 'url(https://r2.fivemanage.com/pub/j1by5siraer4.png)',
+                backgroundSize: '100vw',
+                backgroundPosition: 'center'
+            }}
+        >
             <div className="text-center m-4 w-full xs:w-[25rem] min-w-[20rem]">
-                <LogoFullSquareGreen className="h-12 mx-auto" />
+                {/* <LogoFullSquareGreen className="h-12 mx-auto" /> */}
 
                 <Card className="min-h-64 mt-8 mb-4 p-4 flex items-center justify-center">
                     <Switch>
@@ -27,7 +34,7 @@ export default function AuthShell() {
                     </Switch>
                 </Card>
 
-                <div className="mx-auto flex flex-wrap gap-4 justify-center mb-2">
+                {/* <div className="mx-auto flex flex-wrap gap-4 justify-center mb-2">
                     {window.txConsts.adsData.login ? (
                         <a
                             href={window.txConsts.adsData.login.url}
@@ -60,15 +67,15 @@ export default function AuthShell() {
                             src="img/discord.png"
                         />
                     </a>
-                </div>
+                </div> */}
 
-                <div>
+                {/* <div>
                     <small className="text-muted-foreground text-sm font-light">
                         tx: <strong>v{window.txConsts.txaVersion}</strong>
                         &nbsp;|
                         fx: <strong>b{window.txConsts.fxsVersion}</strong>
                     </small>
-                </div>
+                </div> */}
             </div>
         </div>
     );
