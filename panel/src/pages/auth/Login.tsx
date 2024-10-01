@@ -25,8 +25,8 @@ export enum LogoutReasonHash {
 
 export default function Login() {
     const { setAuthData } = useAuth();
-    const usernameRef = useRef<HTMLInputElement>(null);
-    const passwordRef = useRef<HTMLInputElement>(null);
+    // const usernameRef = useRef<HTMLInputElement>(null);
+    // const passwordRef = useRef<HTMLInputElement>(null);
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const setLocation = useLocation()[1];
 
@@ -64,39 +64,39 @@ export default function Login() {
         },
     });
 
-    const submitMutation = useMutation<
-        ApiVerifyPasswordResp,
-        Error,
-        ApiVerifyPasswordReq
-    >({
-        mutationKey: ['auth'],
-        mutationFn: ({ username, password }) => fetch(`/auth/password?uiVersion=${encodeURIComponent(window.txConsts.txaVersion)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        }).then(res => res.json()),
-        onError,
-        onSuccess: (data) => {
-            if ('error' in data) {
-                if (data.error === 'refreshToUpdate') {
-                    window.location.href = `/login${LogoutReasonHash.UPDATED}`;
-                    window.location.reload();
-                } else {
-                    onErrorResponse(data.error);
-                }
-            } else {
-                setAuthData(data);
-            }
-        },
-    });
+    // const submitMutation = useMutation<
+    //     ApiVerifyPasswordResp,
+    //     Error,
+    //     ApiVerifyPasswordReq
+    // >({
+    //     mutationKey: ['auth'],
+    //     mutationFn: ({ username, password }) => fetch(`/auth/password?uiVersion=${encodeURIComponent(window.txConsts.txaVersion)}`, {
+    //         method: 'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body: JSON.stringify({ username, password })
+    //     }).then(res => res.json()),
+    //     onError,
+    //     onSuccess: (data) => {
+    //         if ('error' in data) {
+    //             if (data.error === 'refreshToUpdate') {
+    //                 window.location.href = `/login${LogoutReasonHash.UPDATED}`;
+    //                 window.location.reload();
+    //             } else {
+    //                 onErrorResponse(data.error);
+    //             }
+    //         } else {
+    //             setAuthData(data);
+    //         }
+    //     },
+    // });
 
-    const handleSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
-        event?.preventDefault();
-        submitMutation.mutate({
-            username: usernameRef.current?.value || '',
-            password: passwordRef.current?.value || '',
-        });
-    };
+    // const handleSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
+    //     event?.preventDefault();
+    //     submitMutation.mutate({
+    //         username: usernameRef.current?.value || '',
+    //         password: passwordRef.current?.value || '',
+    //     });
+    // };
 
     let logoutMessage;
     if (window.location.hash === LogoutReasonHash.LOGOUT) {
@@ -111,24 +111,26 @@ export default function Login() {
     const displayMessage = errorMessage ?? logoutMessage;
 
     //Prefill username/password if dev pass enabled
-    useEffect(() => {
-        try {
-            const rawLocalStorageStr = localStorage.getItem('authCredsAutofill');
-            if (rawLocalStorageStr) {
-                const [user, pass] = JSON.parse(rawLocalStorageStr);
-                usernameRef.current!.value = user ?? '';
-                passwordRef.current!.value = pass ?? '';
-            }
-        } catch (error) {
-            console.error('Username/Pass autofill failed', error);
-        }
-    }, []);
+    // useEffect(() => {
+    //     try {
+    //         const rawLocalStorageStr = localStorage.getItem('authCredsAutofill');
+    //         if (rawLocalStorageStr) {
+    //             const [user, pass] = JSON.parse(rawLocalStorageStr);
+    //             usernameRef.current!.value = user ?? '';
+    //             passwordRef.current!.value = pass ?? '';
+    //         }
+    //     } catch (error) {
+    //         console.error('Username/Pass autofill failed', error);
+    //     }
+    // }, []);
 
 
     return (
-        <form onSubmit={handleSubmit} className='w-full'>
+        // <form onSubmit={handleSubmit} >
+        <div className='w-full'>
             <CardHeader className="space-y-1">
                 <CardTitle className="text-3xl">Login</CardTitle>
+                <CardTitle className="text-1xl">Maximus Scripts</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
                 <div>
@@ -152,7 +154,7 @@ export default function Login() {
                         }
                     </button>
                 </div>
-                <div className="relative">
+                {/* <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
                     </div>
@@ -179,17 +181,17 @@ export default function Login() {
                             autoCapitalize='off' autoComplete='off' required
                         />
                     </div>
-                </div>
+                </div> */}
             </CardContent>
             <CardFooter className='flex-col pb-0'>
-                <Button className="w-full" disabled={submitMutation.isPending}>
+                {/* <Button className="w-full" disabled={submitMutation.isPending}>
                     {submitMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Login
-                </Button>
+                </Button> */}
                 <div className="text-destructive mt-2">
                     {displayMessage ?? <>&nbsp;</>}
                 </div>
             </CardFooter>
-        </form>
+        </div>/* </form> */
     );
 }
