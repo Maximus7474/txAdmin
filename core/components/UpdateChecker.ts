@@ -67,11 +67,13 @@ export default class UpdateChecker {
             return;
         }
 
+        const extractVersion = (input: string): string => input.match(/^v\d+\.\d+\.\d+/)?.[0] || 'v9.9.9';
+
         //Checking txAdmin version
         try {
-            const isOutdated = semver.lt(txEnv.txAdminVersion, apiResponse.latest_txadmin);
+            const isOutdated = semver.lt(extractVersion(txEnv.txAdminVersion), apiResponse.latest_txadmin);
             if (isOutdated) {
-                const semverDiff = semver.diff(txEnv.txAdminVersion, apiResponse.latest_txadmin);
+                const semverDiff = semver.diff(extractVersion(txEnv.txAdminVersion), apiResponse.latest_txadmin);
                 if (semverDiff === 'patch') {
                     console.warn('This version of txAdmin is outdated.');
                     console.warn('A patch (bug fix) update is available for txAdmin.');
