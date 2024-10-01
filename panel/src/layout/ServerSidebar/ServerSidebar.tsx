@@ -37,7 +37,7 @@ export function ServerSidebar({ isSheet }: ServerSidebarProps) {
             </div>
             <hr className={isSheet ? 'block' : 'hidden'} />
 
-            {window.txConsts.adsData.main ? (
+            {/* {window.txConsts.adsData.main ? (
                 <a
                     href={window.txConsts.adsData.main.url}
                     onClick={handleExternalLinkClick}
@@ -53,7 +53,7 @@ export function ServerSidebar({ isSheet }: ServerSidebarProps) {
                         src={window.txConsts.adsData.main.img}
                     />
                 </a>
-            ) : null}
+            ) : null} */}
 
             {window.txConsts.isWebInterface ? (
                 <div className='flex flex-col items-center justify-center gap-1 text-sm font-light opacity-85 hover:opacity-100'>
