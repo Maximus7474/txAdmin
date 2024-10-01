@@ -7,8 +7,8 @@ import pidUsageTree from '@core/extras/pidUsageTree.js';
 import { txEnv } from '@core/globalData';
 import si from 'systeminformation';
 import consoleFactory from '@extras/console';
-import { QuantileArrayOutput } from '@core/components/StatsManager/statsUtils';
 import TxAdmin from '@core/txAdmin';
+import { parseFxserverVersion } from '@extras/fxsVersionParser';
 const console = consoleFactory(modulename);
 
 
@@ -45,6 +45,7 @@ let hostStaticDataCache: HostStaticDataType;
 
 /**
  * Gets the Processes Data.
+ * FIXME: migrate to use gwmi on windows by default
  */
 export const getProcessesData = async () => {
     type ProcDataType = {
@@ -87,13 +88,24 @@ export const getProcessesData = async () => {
                 ppid: (curr.ppid == txProcessId) ? 'txAdmin' : curr.ppid,
                 name: procName,
                 cpu: curr.cpu,
-                memory: curr.memory / (MEGABYTE),
+                memory: curr.memory / MEGABYTE,
                 order: order,
             });
         });
     } catch (error) {
-        console.error('Error getting processes tree usage data.');
-        console.verbose.dir(error);
+        if ((error as any).code = 'ENOENT') {
+            console.error('Failed to get processes tree usage data.');
+            if (txEnv.isWindows) {
+                console.error('This is probably because the `wmic` command is not available in your system.');
+                console.error('If you are on Windows 11 or Windows Server 2025, you can enable it in the "Windows Features" settings.');
+            } else {
+                console.error('This is probably because the `ps` command is not available in your system.');
+                console.error('This command is part of the `procps` package in most Linux distributions.');
+            }
+        } else {
+            console.error('Error getting processes tree usage data.');
+            console.verbose.dir(error);
+        }
     }
 
     //Sort procList array
@@ -132,25 +144,15 @@ export const getFXServerData = async (txAdmin: TxAdmin) => {
         return { error: 'Failed to retrieve FXServer data. <br>The server must be online for this operation. <br>Check the terminal for more information (if verbosity is enabled)' };
     }
 
-    //Helper function
-    const getBuild = (ver: any) => {
-        try {
-            const res = /v1\.0\.0\.(\d{4,5})\s*/.exec(ver);
-            // @ts-ignore: let it throw
-            return parseInt(res[1]);
-        } catch (error) {
-            return 0;
-        }
-    };
-
     //Processing result
     try {
+        const ver = parseFxserverVersion(infoData.server);
         return {
             error: false,
             statusColor: 'success',
             status: ' ONLINE ',
-            version: infoData.server,
-            versionMismatch: (getBuild(infoData.server) !== txEnv.fxServerVersion),
+            version: ver.valid ? `${ver.platform}:${ver.branch}:${ver.build}` : `${ver.platform ?? 'unknown'}:INVALID`,
+            versionMismatch: (ver.build !== txEnv.fxServerVersion),
             resources: infoData.resources.length,
             onesync: (infoData.vars && infoData.vars.onesync_enabled === 'true') ? 'enabled' : 'disabled',
             maxClients: (infoData.vars && infoData.vars.sv_maxClients) ? infoData.vars.sv_maxClients : '--',
@@ -171,7 +173,7 @@ export const getFXServerData = async (txAdmin: TxAdmin) => {
 export const getHostData = async (txAdmin: TxAdmin): Promise<HostDataReturnType> => {
     const tmpDurationDebugLog = (msg: string) => {
         // @ts-expect-error
-        if(globals?.tmpSetHbDataTracking){
+        if (globals?.tmpSetHbDataTracking) {
             console.verbose.debug(`refreshHbData: ${msg}`);
         }
     }
@@ -186,7 +188,7 @@ export const getHostData = async (txAdmin: TxAdmin): Promise<HostDataReturnType>
             const userInfo = os.userInfo();
             tmpDurationDebugLog('got userInfo');
             osUsername = userInfo.username;
-        } catch (error) {}
+        } catch (error) { }
 
         try {
             const cpuStats = await si.cpu();
@@ -273,22 +275,10 @@ export const getTxAdminData = async (txAdmin: TxAdmin) => {
         units: ['d', 'h', 'm'],
     };
 
-    const formatQuantileTimes = (res: QuantileArrayOutput) => {
-        let output = 'not enough data available';
-        if (!('notEnoughData' in res)){
-            const quantileTimes = [res.count.toString()];
-            for (const [key, val] of Object.entries(res)) {
-                if (key === 'count') continue;
-                quantileTimes.push(`${Math.ceil(val)}ms`);
-            }
-            output = quantileTimes.join(' / ');
-        }
-        return output;
-    }
-    const banCheckTime = formatQuantileTimes(txAdmin.statsManager.txRuntime.banCheckTime.result());
-    const whitelistCheckTime = formatQuantileTimes(txAdmin.statsManager.txRuntime.whitelistCheckTime.result());
-    const playersTableSearchTime = formatQuantileTimes(txAdmin.statsManager.txRuntime.playersTableSearchTime.result());
-    const historyTableSearchTime = formatQuantileTimes(txAdmin.statsManager.txRuntime.historyTableSearchTime.result());
+    const banCheckTime = txAdmin.statsManager.txRuntime.banCheckTime.resultSummary();
+    const whitelistCheckTime = txAdmin.statsManager.txRuntime.whitelistCheckTime.resultSummary();
+    const playersTableSearchTime = txAdmin.statsManager.txRuntime.playersTableSearchTime.resultSummary();
+    const historyTableSearchTime = txAdmin.statsManager.txRuntime.historyTableSearchTime.resultSummary();
 
     return {
         //Stats
