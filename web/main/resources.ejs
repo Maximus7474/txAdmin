@@ -1,5 +1,15 @@
 <%- await include('parts/header.ejs', locals) %>
 
+<style>
+    .collapsed {
+        height: 0;
+    }
+    .head-hover:hover {
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-color: #d8dbe0;
+    }
+</style>
 
 <div class="row justify-content-center">
     <div class="col-md-8 mw-col6">
@@ -29,6 +39,15 @@
                         <input type="checkbox" id="stoppedResCheckbox" class="c-switch-input">
                         <span class="c-switch-slider" data-checked="Show" data-unchecked="Hide"></span>
                     </label>
+                    
+                    <span class="form-text text-muted ml-3 mr-1">
+                        Expand/Collapse Tabs:
+                    </span>
+                    
+                    <label class="switch-lg c-switch c-switch-label c-switch-pill c-switch-success fix-pill-form">
+                        <input type="checkbox" id="toggleTabsResCheckbox" class="c-switch-input">
+                        <span class="c-switch-slider" data-checked="Show" data-unchecked="Hide"></span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -36,16 +55,21 @@
 </div>
 <div class="row justify-content-center">
     <div class="col-sm-12 col-lg-8 mw-col8">
-        <div class="card card-accent-info table-responsive-sm">
-            <table class="table table-hover table-outline mb-0">
-                <% for (const resGroup of resGroups) { %>
-                    <thead class="thead-light" id="resList-card-<%= resGroup.divName %>">
+        <% for (const resGroup of resGroups) { %>
+            <div class="card table-responsive-sm" style="margin: 1em 0; border-radius: 0;" id="resList-card-<%= resGroup.divName %>">
+                <!-- Table class is responsible for the sharper edges -->
+                <table class="table table-hover table-outline mb-0" id="resourceTabs">
+                    <thead class="thead-light">
                         <tr>
-                            <th class="text-break text-center" colspan="2"><%= resGroup.subPath %></th>
+                            <th class="text-break text-center" colspan="2">
+                                <%= resGroup.subPath %>
+                                <span class="toggle-icon" id="icon-<%= resGroup.divName %>">
+                                    <i class="icon-arrow-down" style="font-size: 75%; font-weight: bold;"></i>
+                                </span>
+                            </th>
                         </tr>
                     </thead>
-                    <tbody id="resList-cardBody-<%= resGroup.divName %>"
-                        aria-labelledby="resList-cardHeader-<%= resGroup.divName %>">
+                    <tbody id="resList-cardBody-<%= resGroup.divName %>" aria-labelledby="resList-cardHeader-<%= resGroup.divName %>" class="collapse mb-1">
                         <% for (const resource of resGroup.resources) { %>
                             <tr id="res-<%= resource.divName %>">
                                 <td>
@@ -61,7 +85,6 @@
                                         <%= resource.description %>
                                     <% } %>
                                 </td>
-
                                 <td class="tableActions">
                                     <% if (resource.status === 'started') { %>
                                     <a class="btn btn-sm btn-outline-warning d-block d-md-inline-block mr-md-1 mb-1 mb-md-0 <%= disableActions %>"
@@ -83,13 +106,11 @@
                                     <% } %>
                                 </td>
                             </tr>
-                        <% } %> 
-                        <%# End individual resource loop %>
+                        <% } %>
                     </tbody>
-                <% } %>
-                <%# End resource group loop %>
-            </table>
-        </div>
+                </table>
+            </div>
+        <% } %>
     </div>
 </div>
 
@@ -231,6 +252,11 @@
     $('#stoppedResCheckbox').click(() => {
         window.localStorage.resourcesPageShowStopped = document.getElementById('stoppedResCheckbox').checked;
         refreshResourceList();
+    });
+
+    $('#toggleTabsResCheckbox').click(() => {
+        window.localStorage.resourcesPageShowStopped = document.getElementById('toggleTabsResCheckbox').checked;
+        refreshResourceList();
     })
 
     function refreshResourceList() {
@@ -238,11 +264,17 @@
             defaultResources.forEach(defRes => {
                 $(`#res-${defRes}`).show();
                 $(`#res-${defRes}`).removeClass("defaultRes");
+
+                $(`#res-${defRes}`).closest('div').show();
             })
         } else {
             defaultResources.forEach(defRes => {
-                $(`#res-${defRes}`).hide();
-                $(`#res-${defRes}`).addClass("defaultRes");
+                const trElement = $(`#res-${defRes}`);
+
+                trElement.hide();
+                trElement.addClass("defaultRes");
+
+                $(`#res-${defRes}`).closest('div').hide();
             })
         }
 
@@ -270,6 +302,29 @@
                 $(`#resList-card-${folder.divName}`).show();
             }
         });
+        
+        const tables = document.querySelectorAll('#resourceTabs');
+        if ($('#toggleTabsResCheckbox').is(':checked')) {
+            tables.forEach(table => {
+                const tbody = table.querySelector("tbody");
+                const icon = table.querySelector('.toggle-icon i');
+                if (tbody.classList.contains('collapse')) {
+                    tbody.classList.remove('collapse');
+                    icon.classList.remove('icon-arrow-down');
+                    icon.classList.add('icon-arrow-up');
+                }
+            });
+        } else {
+            tables.forEach(table => {
+                const tbody = table.querySelector("tbody");
+                const icon = table.querySelector('.toggle-icon i');
+                if (!tbody.classList.contains('collapse')) {
+                    tbody.classList.add('collapse');
+                    icon.classList.add('icon-arrow-down');
+                    icon.classList.remove('icon-arrow-up');
+                }
+            });
+        }
     }
 
     $(() => {
@@ -279,8 +334,29 @@
             window.localStorage.resourcesPageShowDefault = false;
         }
 
-        document.getElementById('stoppedResCheckbox').checked = window.localStorage.resourcesPageShowStopped === 'true'
+        document.getElementById('stoppedResCheckbox').checked = window.localStorage.resourcesPageShowStopped === 'true';
+
+        const theads = document.querySelectorAll('thead.thead-light');
+        theads.forEach(thead => {
+            thead.addEventListener('click', function() {
+                const tbody = this.nextElementSibling;
+                const icon = this.querySelector('.toggle-icon i');
+                if (tbody.classList.contains('collapse')) {
+                    tbody.classList.remove('collapse');
+                    icon.classList.remove('icon-arrow-down');
+                    icon.classList.add('icon-arrow-up');
+                    this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    tbody.classList.add('collapse');
+                    icon.classList.remove('icon-arrow-up');
+                    icon.classList.add('icon-arrow-down');
+                }
+            });
+        });
 
         refreshResourceList();
     });
+
+    // document.addEventListener('DOMContentLoaded', function() {
+    // });
 </script>
