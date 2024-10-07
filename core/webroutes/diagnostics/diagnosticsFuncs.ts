@@ -9,8 +9,6 @@ import si from 'systeminformation';
 import consoleFactory from '@extras/console';
 import TxAdmin from '@core/txAdmin';
 import { parseFxserverVersion } from '@extras/fxsVersionParser';
-import { getHeapStatistics } from 'node:v8';
-import bytes from 'bytes';
 const console = consoleFactory(modulename);
 
 
@@ -281,7 +279,6 @@ export const getTxAdminData = async (txAdmin: TxAdmin) => {
     const whitelistCheckTime = txAdmin.statsManager.txRuntime.whitelistCheckTime.resultSummary();
     const playersTableSearchTime = txAdmin.statsManager.txRuntime.playersTableSearchTime.resultSummary();
     const historyTableSearchTime = txAdmin.statsManager.txRuntime.historyTableSearchTime.resultSummary();
-    const memoryUsage = getHeapStatistics();
 
     return {
         //Stats
@@ -290,7 +287,6 @@ export const getTxAdminData = async (txAdmin: TxAdmin) => {
             close: txAdmin.statsManager.txRuntime.monitorStats.restartReasons.close,
             heartBeat: txAdmin.statsManager.txRuntime.monitorStats.restartReasons.heartBeat,
             healthCheck: txAdmin.statsManager.txRuntime.monitorStats.restartReasons.healthCheck,
-            both: txAdmin.statsManager.txRuntime.monitorStats.restartReasons.both,
         },
         hbFD3Fails: txAdmin.statsManager.txRuntime.monitorStats.healthIssues.fd3,
         hbHTTPFails: txAdmin.statsManager.txRuntime.monitorStats.healthIssues.http,
@@ -310,16 +306,5 @@ export const getTxAdminData = async (txAdmin: TxAdmin) => {
         fxServerHost: (txAdmin.fxRunner.fxServerHost)
             ? txAdmin.fxRunner.fxServerHost
             : '--',
-
-        //Usage stuff
-        memoryUsage: {
-            heap_used: bytes(memoryUsage.used_heap_size),
-            heap_limit: bytes(memoryUsage.heap_size_limit),
-            heap_pct: (memoryUsage.heap_size_limit > 0)
-                ? (memoryUsage.used_heap_size / memoryUsage.heap_size_limit * 100).toFixed(2)
-                : 0,
-            physical: bytes(memoryUsage.total_physical_size),
-            peak_malloced: bytes(memoryUsage.peak_malloced_memory),
-        },
     };
 }

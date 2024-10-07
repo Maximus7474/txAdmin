@@ -3,7 +3,7 @@ import { Route as WouterRoute, Switch } from "wouter";
 import { PageErrorFallback } from "@/components/ErrorFallback";
 import { useAtomValue, useSetAtom } from "jotai";
 import { contentRefreshKeyAtom, pageErrorStatusAtom, useSetPageTitle } from "@/hooks/pages";
-import { navigate as setLocation } from 'wouter/use-browser-location';
+import { navigate as setLocation } from 'wouter/use-location';
 
 import Iframe from "@/pages/Iframe";
 import NotFound from "@/pages/NotFound";
@@ -176,7 +176,7 @@ export default function MainRouter() {
                 {import.meta.env.DEV && (
                     <WouterRoute path="/test"><TestingPage /></WouterRoute>
                 )}
-                <WouterRoute component={NotFound} />
+                <WouterRoute path="/:fullPath*" component={NotFound} />
             </Switch>
         </ErrorBoundary>
     );

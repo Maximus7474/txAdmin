@@ -1,11 +1,10 @@
-//@ts-nocheck
 import '@extras/testEnv';
 import { expect, it, suite } from 'vitest';
-import { classifyDrop } from './classifyDropReason';
+import { classifyDropReason } from './classifyDropReason';
 import { PDL_CRASH_REASON_CHAR_LIMIT, PDL_UNKNOWN_REASON_CHAR_LIMIT } from './config';
 
 
-const playerInitiatedExamples = [
+const userInitiatedExamples = [
     `Exiting`,
     `Quit: safasdfsadfasfd`,
     `Entering Rockstar Editor`,
@@ -23,6 +22,7 @@ const serverInitiatedExamples = [
 const timeoutExamples = [
     `Server->client connection timed out. Pending commands: %d.\nCommand list:\n%s`,
     `Server->client connection timed out. Last seen %d msec ago.`,
+    `Fetching info timed out.`,
     `Connection timed out.`,
     `Timed out after 60 seconds (1, %d)`,
     `Timed out after 60 seconds (2)`,
@@ -47,35 +47,21 @@ const crashExceptionExamples = [
 ];
 
 
-suite('classifyDrop legacy mode', () => {
-    const fnc = (reason: string) => classifyDrop({
-        type: 'txAdminPlayerlistEvent',
-        event: 'playerDropped',
-        id: 0,
-        reason,
-    });
+suite('classifyDropReason', () => {
+    const fnc = classifyDropReason;
     it('should handle invalid reasons', () => {
-        expect(fnc(undefined as any)).toEqual({
-            category: 'unknown',
-            cleanReason: '[tx:invalid-reason]',
-        });
-        expect(fnc('')).toEqual({
-            category: 'unknown',
-            cleanReason: '[tx:empty-reason]',
-        });
-        expect(fnc('   ')).toEqual({
-            category: 'unknown',
-            cleanReason: '[tx:empty-reason]',
-        });
+        expect(fnc(undefined as any)).toEqual({ category: 'unknown' });
+        expect(fnc('')).toEqual({ category: 'unknown' });
+        expect(fnc('   ')).toEqual({ category: 'unknown' });
     });
-    it('should classify player-initiated reasons', () => {
-        for (const reason of playerInitiatedExamples) {
-            expect(fnc(reason).category).toBe('player');
+    it('should classify user-initiated reasons', () => {
+        for (const reason of userInitiatedExamples) {
+            expect(fnc(reason).category).toBe('user-initiated');
         }
     });
     it('should classify server-initiated reasons', () => {
         for (const reason of serverInitiatedExamples) {
-            expect(fnc(reason).category).toBe(false);
+            expect(fnc(reason).category).toBe('server-initiated');
         }
     });
     it('should classify timeout reasons', () => {
@@ -112,71 +98,5 @@ suite('classifyDrop legacy mode', () => {
         expect(resp.cleanReason).toBeTypeOf('string');
         expect(resp.cleanReason!.length).toBe(PDL_UNKNOWN_REASON_CHAR_LIMIT);
         expect(resp.category).toBe('unknown');
-    });
-});
-
-
-suite('classifyDrop new mode', () => {
-    const fnc = (reason: string, resource: string, category: number) => classifyDrop({
-        type: 'txAdminPlayerlistEvent',
-        event: 'playerDropped',
-        id: 0,
-        reason,
-        category,
-        resource,
-    });
-    it('should handle invalid categories', () => {
-        expect(fnc('rsn', 'res', null)).toEqual({
-            category: 'unknown',
-            cleanReason: '[tx:invalid-category] rsn',
-        });
-        expect(fnc('rsn', 'res', -1)).toEqual({
-            category: 'unknown',
-            cleanReason: '[tx:invalid-category] rsn',
-        });
-        expect(fnc('rsn', 'res', 999)).toEqual({
-            category: 'unknown',
-            cleanReason: '[tx:unknown-category] rsn',
-        });
-    });
-
-    it('should handle the resource category', () => {
-        expect(fnc('rsn', 'res', 1)).toEqual({
-            category: 'resource',
-            resource: 'res',
-        });
-        expect(fnc('rsn', '', 1)).toEqual({
-            category: 'resource',
-            resource: 'unknown',
-        });
-        expect(fnc('rsn', 'monitor', 1)).toEqual({
-            category: 'resource',
-            resource: 'txAdmin',
-        });
-        expect(fnc('server_shutting_down', 'monitor', 1)).toEqual({
-            category: false,
-        });
-    });
-    it('should handle the client category', () => {
-        expect(fnc('rsn', 'res', 2)).toEqual({
-            category: 'player',
-        });
-        expect(fnc(crashExamples[0], 'res', 2).category).toEqual('crash');
-    });
-    it('should handle the timeout category', () => {
-        expect(fnc('rsn', 'res', 5)).toEqual({category: 'timeout'});
-        expect(fnc('rsn', 'res', 6)).toEqual({category: 'timeout'});
-        expect(fnc('rsn', 'res', 12)).toEqual({category: 'timeout'});
-    });
-    it('should handle the security category', () => {
-        expect(fnc('rsn', 'res', 3)).toEqual({category: 'security'});
-        expect(fnc('rsn', 'res', 4)).toEqual({category: 'security'});
-        expect(fnc('rsn', 'res', 8)).toEqual({category: 'security'});
-        expect(fnc('rsn', 'res', 9)).toEqual({category: 'security'});
-        expect(fnc('rsn', 'res', 10)).toEqual({category: 'security'});
-        expect(fnc('rsn', 'res', 11)).toEqual({category: 'security'});
-    });
-    it('should handle the shutdown category', () => {
-        expect(fnc('rsn', 'res', 7)).toEqual({category: false});
     });
 });

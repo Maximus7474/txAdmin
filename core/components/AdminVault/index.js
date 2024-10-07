@@ -305,6 +305,7 @@ export default class AdminVault {
             }
         } catch (error) {
             console.error(`Cannot check admins file integrity: ${error.message}`);
+            restore();
         }
     }
 

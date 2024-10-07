@@ -78,7 +78,7 @@ export type PlayerDroppedEventType = {
     mutex: string,
     type: 'playerDropped',
     netid: number,
-    reasonCategory?: string, //missing in case of server shutdown
+    reasonCategory: string,
 }
 
 export type PlayerJoiningEventType = {

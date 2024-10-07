@@ -23,7 +23,7 @@ export default {
       paper: "#24282B",
     },
     action: {
-      selected: "rgba(255, 255, 255, 0.1)",
+      selected: "rgba(255, 255, 255, 0.08)",
     },
     secondary: {
       main: "#fff",
@@ -37,31 +37,12 @@ export default {
     MuiListItem: {
       styleOverrides: {
         root: {
-          border: "1px solid transparent",
           "&.Mui-selected": {
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
+            backgroundColor: "rgba(255, 255, 255, 0.08)",
           },
         },
       },
     },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          border: "1px solid transparent",
-          "&.Mui-selected": {
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-          },
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: "unset"
-        }
-      }
-    },
+    MuiPaper: { styleOverrides: { root: { backgroundImage: "unset" } } },
   },
 } as const;

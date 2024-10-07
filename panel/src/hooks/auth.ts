@@ -11,7 +11,6 @@ import { actionModalOpenAtom } from './actionModal';
 import { dashDataTsAtom, dashPerfCursorAtom, dashPlayerDropAtom, dashServerStatsAtom, dashSvRuntimeAtom } from '@/pages/Dashboard/dashboardHooks';
 import { redirectToLogin } from '@/lib/utils';
 import { LogoutReasonHash } from '@/pages/auth/Login';
-import { mutate } from 'swr'
 
 
 /**
@@ -139,9 +138,6 @@ export const logoutWatcher = atomEffect((get, set) => {
     set(dashPerfCursorAtom, undefined);
     set(dashDataTsAtom, 0);
     txToast.dismiss(); //making sure we don't have any pending toasts
-
-    //Force invalidation of all cached data in SWR
-    mutate(() => true, undefined, { revalidate: false });
 
     //TODO: maybe also erase playerlist/mutex?
 });
