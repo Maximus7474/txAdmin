@@ -39,7 +39,10 @@ const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, is
 
     //Process data only once
     const processedData = useMemo(() => {
-        if (!apiData) return null;
+        if (!apiData) {
+            setServerStats(undefined);
+            return null;
+        }
         const parsed = processPerfLog(apiData.threadPerfLog, (perfLog) => {
             const bucketTicketsEstimatedTime = getBucketTicketsEstimatedTime(apiData.boundaries);
             return getTimeWeightedHistogram(
@@ -47,7 +50,14 @@ const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, is
                 bucketTicketsEstimatedTime
             );
         });
-        if (!parsed) return null;
+        if (!parsed) {
+            setServerStats(undefined);
+            return null;
+        }
+
+        //Calculate server stats here because the data comes from SWR instead of jotai
+        const serverStatsData = getServerStatsData(parsed.lifespans, 24, apiDataAge);
+        setServerStats(serverStatsData);
 
         return {
             ...parsed,
@@ -61,16 +71,6 @@ const FullPerfChart = memo(({ threadName, apiData, apiDataAge, width, height, is
             },
         }
     }, [apiData, apiDataAge, threadName, isDarkMode, renderError]);
-
-    //Update server stats when data changes
-    useEffect(() => {
-        if (!processedData) {
-            setServerStats(undefined);
-        } else {
-            const serverStatsData = getServerStatsData(processedData.lifespans, 24, apiDataAge);
-            setServerStats(serverStatsData);
-        }
-    }, [processedData, apiDataAge]);
 
 
     //Redraw chart when data or size changes
@@ -201,7 +201,7 @@ export default function FullPerfCard() {
         //the data min interval is 5 mins, so we can safely cache for 1 min
         revalidateOnMount: true,
         revalidateOnFocus: false,
-        refreshInterval: 60 * 1000,
+        refreshInterval: 60 * 1000, 
     });
 
     //Rendering

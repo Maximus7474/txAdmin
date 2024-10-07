@@ -29,8 +29,6 @@ debugData<any>(
     {
       action: "setPermissions",
       data: ["all_permissions"],
-      // data: ['players.heal', 'announcement'],
-      // data: [],
     },
     {
       action: "setVisible",
@@ -38,8 +36,8 @@ debugData<any>(
     },
     {
       action: "setGameName",
-      data: 'fivem',
-      // data: 'redm',
+      // data: 'fivem',
+      data: 'redm',
     },
   ],
   150

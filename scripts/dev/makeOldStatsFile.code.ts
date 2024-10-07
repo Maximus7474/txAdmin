@@ -4,58 +4,26 @@
  */
 import fs from 'node:fs';
 import { shuffle } from 'd3-array';
-import { PDLChangeEventType, PDLFileType } from '../../core/components/StatsManager/playerDrop/playerDropSchemas';
+import { PDLChangeEventType_V1, PDLFileType_v1 } from '../../core/components/StatsManager/playerDrop/playerDropSchemas';
 import { MultipleCounter } from '../../core/components/StatsManager/statsUtils';
 
 
 type CountersType = {
     drops: MultipleCounter,
-    resKicks: MultipleCounter,
     crashes: MultipleCounter,
-    changes: PDLChangeEventType[],
+    changes: PDLChangeEventType_V1[],
 };
-
-const getRandomResource = () => {
-    const pool = [
-        'anticheat', 'anticheat', 'anticheat', 'anticheat',
-        'txAdmin', 'txAdmin', 'txAdmin',
-        'vMenu',
-        'es_extended',
-    ];
-    return pool[Math.floor(Math.random() * pool.length)];
-}
 
 
 export default (sourceFiles: string[], targetFileName: string) => {
     let logCounters: CountersType[] = [];
     for (const fileName of sourceFiles) {
-        const fileData = JSON.parse(fs.readFileSync(fileName, 'utf8')) as PDLFileType;
+        const fileData = JSON.parse(fs.readFileSync(fileName, 'utf8')) as PDLFileType_v1;
         console.log('fileData.log.length:', fileData.log.length);
         for (const log of fileData.log) {
-            const resKicks = new MultipleCounter();
-            const drops = log.dropTypes.map(([type, count]): [string, number] | false => {
-                if (type === 'user-initiated') {
-                    return ['player', count]
-                } else if (type === 'server-initiated') {
-                    resKicks.count('txAdmin', count);
-                    return ['resource', count];
-                } else if (type === 'unknown') {
-                    if (Math.random() <= 0.2) {
-                        return [type, count];
-                    } else {
-                        resKicks.count(getRandomResource(), count);
-                        return ['resource', count];
-                    }
-                } else {
-                    return [type, count];
-                }
-            }).filter((x): x is [string, number] => Array.isArray(x));
-
-
             logCounters.push({
                 // drops: new MultipleCounter(log.dropTypes.filter(([type]) => type !== 'server-initiated')),
-                drops: new MultipleCounter(drops),
-                resKicks: resKicks,
+                drops: new MultipleCounter(log.dropTypes),
                 crashes: new MultipleCounter(log.crashTypes),
                 changes: log.changes,
             });
@@ -74,7 +42,6 @@ export default (sourceFiles: string[], targetFileName: string) => {
             mergedCounters[writeIndex] = currCounters;
         } else {
             mergedCounters[writeIndex].drops.merge(currCounters.drops);
-            mergedCounters[writeIndex].resKicks.merge(currCounters.resKicks);
             mergedCounters[writeIndex].crashes.merge(currCounters.crashes);
             mergedCounters[writeIndex].changes.push(...currCounters.changes);
         }
@@ -96,14 +63,13 @@ export default (sourceFiles: string[], targetFileName: string) => {
 
 
     //Prepare new log with the data
-    const newLog: PDLFileType['log'] = [];
+    const newLog: PDLFileType_v1['log'] = [];
     for (const hour of last336Hours) {
         const counters = mergedCounters.pop()!;
         const newHour = {
             hour: hour.toISOString(),
             changes: counters?.changes ?? [],
             dropTypes: counters?.drops.toArray() ?? [],
-            resKicks: counters?.resKicks.toArray() ?? [],
             crashTypes: counters?.crashes.toArray() ?? [],
         };
         newLog.push(newHour);
@@ -111,17 +77,16 @@ export default (sourceFiles: string[], targetFileName: string) => {
             hour: newHour.hour,
             changes: newHour.changes.length,
             drops: counters.drops.sum(),
-            resKicks: counters.resKicks.sum(),
             crashes: counters.crashes.sum(),
         });
     }
 
 
     //Write new file
-    const newStatsFile: PDLFileType = {
-        version: 2,
-        lastGameVersion: 'unknown',
-        lastServerVersion: 'unknown',
+    const newStatsFile: PDLFileType_v1 = {
+        version: 1,
+        lastGameVersion: 'idk',
+        lastServerVersion: 'idk',
         lastResourceList: [],
         lastUnknownReasons: [],
         log: newLog,

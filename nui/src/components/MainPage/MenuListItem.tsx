@@ -4,7 +4,6 @@ import {
   Box,
   BoxProps,
   ListItem,
-  ListItemButton,
   ListItemIcon,
   ListItemSecondaryAction,
   ListItemText,
@@ -33,12 +32,12 @@ const classes = {
 
 const Root = styled('div')(({ theme }) => ({
   [`& .${classes.root}`]: {
-    borderRadius: 10,
+    borderRadius: 15,
   },
 
   [`& .${classes.rootDisabled}`]: {
-    borderRadius: 10,
-    opacity: 0.35,
+    borderRadius: 15,
+    opacity: 0.3,
   },
 
   [`& .${classes.icon}`]: {
@@ -114,7 +113,7 @@ export const MenuListItem: React.FC<MenuListItemProps> = memo(
 
     return (
       <Root ref={divRef}>
-        <ListItemButton
+        <ListItem
           onClick={() => onSelect()}
           className={isUserAllowed ? classes.root : classes.rootDisabled}
           dense
@@ -127,7 +126,7 @@ export const MenuListItem: React.FC<MenuListItemProps> = memo(
               primary: classes.overrideText,
             }}
           />
-        </ListItemButton>
+        </ListItem>
       </Root>
     );
   }
@@ -241,7 +240,7 @@ export const MenuListItemMulti: React.FC<MenuListItemMultiProps> = memo(
 
     return (
       <Root ref={divRef}>
-        <ListItemButton
+        <ListItem
           className={isUserAllowed ? classes.root : classes.rootDisabled}
           dense
           selected={selected}
@@ -265,7 +264,7 @@ export const MenuListItemMulti: React.FC<MenuListItemMultiProps> = memo(
           <ListItemSecondaryAction>
             <Code className={classes.icon} />
           </ListItemSecondaryAction>
-        </ListItemButton>
+        </ListItem>
       </Root>
     );
   }

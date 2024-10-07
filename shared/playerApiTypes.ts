@@ -58,7 +58,7 @@ export type PlayersStatsResp = {
 } | GenericApiErrorResp;
 
 
-export type PlayersTableSearchType = {
+export type PlayersTableSearchType = null | {
     value: string;
     type: string;
 }
