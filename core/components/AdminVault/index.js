@@ -276,7 +276,7 @@ export default class AdminVault {
      * Writes to storage the admins file
      */
     async writeAdminsFile() {
-        const jsonData = JSON.stringify(this.admins, null, 2);
+        const jsonData = JSON.stringify(this.admins, null, 4);
         this.adminsFileHash = createHash('sha1').update(jsonData).digest('hex');
         await fsp.writeFile(this.adminsFile, jsonData, 'utf8');
         return true;
