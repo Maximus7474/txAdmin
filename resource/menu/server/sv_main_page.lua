@@ -104,18 +104,48 @@ RegisterNetEvent('txsv:req:healPlayer', function(id)
 end)
 
 local ACTIVE_PLAYERID_SOURCES = {}
+local lastPayload = {}
+
+local GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName = GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName
+
+local function GeneratePlayerPayload()
+  local players <const> = GetPlayers()
+  local payload = {}
+
+  for i = 1, #players do
+    local id <const> = tonumber(players[i])
+    if id then
+      local ped <const> = GetPlayerPed(id)
+      local coords <const> = GetEntityCoords(ped)
+      local health <const> = GetEntityHealth(ped)
+      local name <const> = string.sub(GetPlayerName(id) or "unknown", 1, 75)
+
+      table.insert(payload, { id, coords.x, coords.y, coords.z, health, ("[%i] %s"):format(id, name) })
+    end
+  end
+
+  lastPayload = payload
+  return payload
+end
 
 RegisterNetEvent('txsv:req:showPlayerIDs', function(enabled)
   local src = source
   local allow = PlayerHasTxPermission(src, 'menu.viewids')
   TriggerEvent('txsv:logger:menuEvent', src, 'showPlayerIDs', allow, enabled)
+  
   if allow then
-    TriggerClientEvent('txcl:showPlayerIDs', src, enabled)
-
-    print(enabled and 'Added' or 'Removed', 'admin from blip list', src)
-
     if enabled then
-      table.insert(ACTIVE_PLAYERID_SOURCES, src)
+      local currentPayload = lastPayload
+
+      if #ACTIVE_PLAYERID_SOURCES == 0 or #currentPayload == 0 then
+        currentPayload = GeneratePlayerPayload()
+      end
+
+      TriggerClientEvent('txcl:playerBlipsUpdate', src, currentPayload)
+
+      if not table.contains(ACTIVE_PLAYERID_SOURCES, src) then
+        table.insert(ACTIVE_PLAYERID_SOURCES, src)
+      end
     else
       for i = #ACTIVE_PLAYERID_SOURCES, 1, -1 do
         if ACTIVE_PLAYERID_SOURCES[i] == src then
@@ -124,13 +154,13 @@ RegisterNetEvent('txsv:req:showPlayerIDs', function(enabled)
         end
       end
     end
+
+    TriggerClientEvent('txcl:showPlayerIDs', src, enabled)
   end
 end)
 
 AddEventHandler('playerDropped', function()
   local src = source
-
-  if not table.contains(ACTIVE_PLAYERID_SOURCES, src) then return end 
   for i = #ACTIVE_PLAYERID_SOURCES, 1, -1 do
     if ACTIVE_PLAYERID_SOURCES[i] == src then
       table.remove(ACTIVE_PLAYERID_SOURCES, i)
@@ -139,36 +169,19 @@ AddEventHandler('playerDropped', function()
   end
 end)
 
-local GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName = GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName
-Citizen.CreateThread(function(threadId)
+Citizen.CreateThread(function()
   while true do
+    Wait(10000)
+
     if #ACTIVE_PLAYERID_SOURCES > 0 then
-      local players <const> = GetPlayers()
+      local payload = GeneratePlayerPayload()
 
-      local payload = {}
-
-      for i = 1, #players do
-        local id <const> = tonumber(players[i])
-
-        if id then
-          local ped <const> = GetPlayerPed(id)
-          local coords <const> = GetEntityCoords(ped)
-          local health <const> = GetEntityHealth(ped)
-          local name <const> = string.sub(GetPlayerName(id) or "unknown", 1, 75)
-
-          table.insert(payload, { id, coords.x, coords.y, coords.z, health, ("[%i] %s"):format(id, name) })
-        end
-      end
-
-      debugPrint('Sending blip payload update to', #ACTIVE_PLAYERID_SOURCES, 'admins', json.encode(ACTIVE_PLAYERID_SOURCES))
-
+      debugPrint('Sending blip payload update to', #ACTIVE_PLAYERID_SOURCES, 'admins')
 
       for i = 1, #ACTIVE_PLAYERID_SOURCES do
         TriggerClientEvent('txcl:playerBlipsUpdate', ACTIVE_PLAYERID_SOURCES[i], payload)
       end
     end
-
-    Wait(10000)
   end
 end)
 
