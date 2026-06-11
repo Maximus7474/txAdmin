@@ -171,7 +171,7 @@ export default function Login() {
     return (
         <form
             onSubmit={(e) => { e.preventDefault(); handleLogin();}}
-            className='w-full rounded-[inherit]'
+            className="w-full rounded-[inherit] bg-card"
         >
             <CardHeader className="rounded-t-[inherit]">
                 <CardTitle className="h-14 xs:h-16 flex flex-row justify-center items-center gap-4">
