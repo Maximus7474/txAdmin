@@ -187,11 +187,12 @@ local function showGamerTags()
             or playerGamerTags[pid].ped ~= targetPed
             or not IsMpGamerTagActive(playerGamerTags[pid].gamerTag)
         then
-            local playerStr = playerEntities[serverId].name or (
+            local playerStr = playerEntities[serverId] and playerEntities[serverId].name or (
                 '[' .. GetPlayerServerId(pid) .. ']' .. ' ' .. string.sub(
                     GetPlayerName(serverId) or 'unknown', 1, 75
                 )
             )
+
             playerGamerTags[pid] = {
                 gamerTag = CreateFakeMpGamerTag(targetPed, playerStr, false, false, 0),
                 ped = targetPed
