@@ -16,7 +16,7 @@ RegisterNetEvent('txsv:req:tpToWaypoint', function()
     Wait(250)
     local coords = GetEntityCoords(GetPlayerPed(src))
     TriggerEvent('txsv:logger:menuEvent', src, 'teleportWaypoint', true,
-        { x = coords[1], y = coords[2], z = coords[3] })
+      { x = coords[1], y = coords[2], z = coords[3] })
   else
     TriggerEvent('txsv:logger:menuEvent', src, 'teleportWaypoint', false)
   end
@@ -56,7 +56,7 @@ RegisterNetEvent('txsv:req:healEveryone', function()
     TriggerClientEvent('txcl:heal', -1)
     -- For use with third party resources that handle players
     -- 'revive state' standalone from health (esx-ambulancejob, qb-ambulancejob, etc)
-    TriggerEvent('txAdmin:events:healedPlayer', {id = -1}) -- FIXME: deprecate
+    TriggerEvent('txAdmin:events:healedPlayer', { id = -1 }) -- FIXME: deprecate
     TriggerEvent('txAdmin:events:playerHealed', {
       target = -1,
       author = TX_ADMINS[tostring(src)].username,
@@ -72,7 +72,7 @@ RegisterNetEvent('txsv:req:healMyself', function()
     TriggerClientEvent('txcl:heal', src)
     -- For use with third party resources that handle players
     -- 'revive state' standalone from health (esx-ambulancejob, qb-ambulancejob, etc)
-    TriggerEvent('txAdmin:events:healedPlayer', {id = src}) -- FIXME: deprecate
+    TriggerEvent('txAdmin:events:healedPlayer', { id = src }) -- FIXME: deprecate
     TriggerEvent('txAdmin:events:playerHealed', {
       target = src,
       author = TX_ADMINS[tostring(src)].username,
@@ -93,7 +93,7 @@ RegisterNetEvent('txsv:req:healPlayer', function(id)
       TriggerClientEvent('txcl:heal', id)
       -- For use with third party resources that handle players
       -- 'revive state' standalone from health (esx-ambulancejob, qb-ambulancejob, etc)
-      TriggerEvent('txAdmin:events:healedPlayer', {id = id}) -- FIXME: deprecate
+      TriggerEvent('txAdmin:events:healedPlayer', { id = id }) -- FIXME: deprecate
       TriggerEvent('txAdmin:events:playerHealed', {
         target = id,
         author = TX_ADMINS[tostring(src)].username,
@@ -103,12 +103,72 @@ RegisterNetEvent('txsv:req:healPlayer', function(id)
   TriggerEvent('txsv:logger:menuEvent', src, 'healPlayer', allow, id)
 end)
 
+local ACTIVE_PLAYERID_SOURCES = {}
+
 RegisterNetEvent('txsv:req:showPlayerIDs', function(enabled)
   local src = source
   local allow = PlayerHasTxPermission(src, 'menu.viewids')
   TriggerEvent('txsv:logger:menuEvent', src, 'showPlayerIDs', allow, enabled)
   if allow then
     TriggerClientEvent('txcl:showPlayerIDs', src, enabled)
+
+    print(enabled and 'Added' or 'Removed', 'admin from blip list', src)
+
+    if enabled then
+      table.insert(ACTIVE_PLAYERID_SOURCES, src)
+    else
+      for i = #ACTIVE_PLAYERID_SOURCES, 1, -1 do
+        if ACTIVE_PLAYERID_SOURCES[i] == src then
+          table.remove(ACTIVE_PLAYERID_SOURCES, i)
+          break
+        end
+      end
+    end
+  end
+end)
+
+AddEventHandler('playerDropped', function()
+  local src = source
+
+  if not table.contains(ACTIVE_PLAYERID_SOURCES, src) then return end 
+  for i = #ACTIVE_PLAYERID_SOURCES, 1, -1 do
+    if ACTIVE_PLAYERID_SOURCES[i] == src then
+      table.remove(ACTIVE_PLAYERID_SOURCES, i)
+      break
+    end
+  end
+end)
+
+local GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName = GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName
+Citizen.CreateThread(function(threadId)
+  while true do
+    if #ACTIVE_PLAYERID_SOURCES > 0 then
+      local players <const> = GetPlayers()
+
+      local payload = {}
+
+      for i = 1, #players do
+        local id <const> = tonumber(players[i])
+
+        if id then
+          local ped <const> = GetPlayerPed(id)
+          local coords <const> = GetEntityCoords(ped)
+          local health <const> = GetEntityHealth(ped)
+          local name <const> = string.sub(GetPlayerName(id) or "unknown", 1, 75)
+
+          table.insert(payload, { id, coords.x, coords.y, coords.z, health, ("[%i] %s"):format(id, name) })
+        end
+      end
+
+      print('Sending blip payload update to', #ACTIVE_PLAYERID_SOURCES, 'admins', json.encode(ACTIVE_PLAYERID_SOURCES))
+      print('payload', json.encode(payload))
+
+      for i = 1, #ACTIVE_PLAYERID_SOURCES do
+        TriggerClientEvent('txcl:playerBlipsUpdate', ACTIVE_PLAYERID_SOURCES[i], payload)
+      end
+    end
+
+    Wait(10000)
   end
 end)
 

@@ -5,9 +5,14 @@ if not TX_MENU_ENABLED then return end
 --  This file contains all overhead player ID logic
 -- =============================================
 
+local BLIP_SPRITE <const> = 1
+local BLIP_COLOR <const>  = 0
+local BLIP_SCALE <const>  = 0.8
+
 -- Variables
 local isPlayerIdsEnabled = false
 local playerGamerTags = {}
+local playerEntities = {}
 local distanceToCheck = GetConvarInt('txAdmin-menuPlayerIdDistance', 150)
 
 -- Game consts
@@ -42,7 +47,7 @@ local redmColorYellowHash = GetHashKey('COLOR_YELLOWSTRONG')
 
 --- Removes all cached tags
 local function cleanAllGamerTags()
-    debugPrint('Cleaning up gamer tags table')
+    debugPrint('Cleaning up gamer tags table and blips')
     for _, v in pairs(playerGamerTags) do
         if IsMpGamerTagActive(v.gamerTag) then
             if IS_FIVEM then
@@ -53,6 +58,13 @@ local function cleanAllGamerTags()
         end
     end
     playerGamerTags = {}
+
+    for id, data in pairs(playerEntities) do
+        if data.blipHandle and DoesBlipExist(data.blipHandle) then
+            RemoveBlip(data.blipHandle)
+        end
+    end
+    playerEntities = {}
 end
 
 
@@ -76,6 +88,51 @@ local function setGamerTagFivem(targetTag, pid)
         SetMpGamerTagVisibility(targetTag, fivemGamerTagCompsEnum.AudioIcon, false)
         SetMpGamerTagColour(targetTag, fivemGamerTagCompsEnum.AudioIcon, 0)
         SetMpGamerTagColour(targetTag, fivemGamerTagCompsEnum.GamerName, 0)
+    end
+end
+
+---Generates or updates a blip for a specific player
+---@param entityData { coords: vector3; health: number; blipHandle: nil|number; name: string }
+---@param targetPed nil|number
+local function updatePlayerBlip(playerId, entityData, targetPed)
+    if targetPed and DoesEntityExist(targetPed) then
+        if entityData.blipHandle and DoesBlipExist(entityData.blipHandle) then
+            if GetBlipInfoIdType(entityData.blipHandle) ~= 1 then
+                RemoveBlip(entityData.blipHandle)
+                entityData.blipHandle = nil
+            end
+        end
+    end
+
+    if not entityData.blipHandle or not DoesBlipExist(entityData.blipHandle) then
+        local blip
+        if targetPed and DoesEntityExist(targetPed) then
+            blip = AddBlipForEntity(targetPed)
+            ShowHeadingIndicatorOnBlip(blip, true)
+        else
+            blip = AddBlipForCoord(entityData.coords.x, entityData.coords.y, entityData.coords.z)
+        end
+
+        SetBlipSprite(blip, BLIP_SPRITE)
+        SetBlipColour(blip, BLIP_COLOR)
+        SetBlipScale(blip, BLIP_SCALE)
+        SetBlipCategory(blip, 7)
+
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(entityData.name or ("Player " .. tostring(playerId)))
+        EndTextCommandSetBlipName(blip)
+
+        entityData.blipHandle = blip
+    else
+        if not targetPed or not DoesEntityExist(targetPed) then
+            SetBlipCoords(entityData.blipHandle, entityData.coords.x, entityData.coords.y, entityData.coords.z)
+        end
+    end
+
+    if entityData.health <= 0 then
+        SetBlipColour(entityData.blipHandle, 55)
+    else
+        SetBlipColour(entityData.blipHandle, BLIP_COLOR)
     end
 end
 
@@ -112,25 +169,29 @@ end
 local setGamerTagFunc = IS_FIVEM and setGamerTagFivem or setGamerTagRedm
 local clearGamerTagFunc = IS_FIVEM and clearGamerTagFivem or clearGamerTagRedm
 
-
 --- Loops through every player, checks distance and draws or hides the tag
 local function showGamerTags()
-    local curCoords = GetEntityCoords(PlayerPedId())
-    -- Per infinity this will only return players within 300m
+    local myPid = PlayerPedId()
+    local curCoords = GetEntityCoords(myPid)
     local allActivePlayers = GetActivePlayers()
+    local localActiveServerIds = {}
 
     for _, pid in ipairs(allActivePlayers) do
-        -- Resolving player
         local targetPed = GetPlayerPed(pid)
+        local serverId = GetPlayerServerId(pid)
+        localActiveServerIds[serverId] = true
 
-        -- If we have not yet indexed this player or their tag has somehow dissapeared (pause, etc)
+        -- If we have not yet indexed this player or their tag has somehow disappeared
         if
             not playerGamerTags[pid]
-            or playerGamerTags[pid].ped ~= targetPed --ped can change if it leaves the networked area and back
+            or playerGamerTags[pid].ped ~= targetPed
             or not IsMpGamerTagActive(playerGamerTags[pid].gamerTag)
         then
-            local playerName = string.sub(GetPlayerName(pid) or "unknown", 1, 75)
-            local playerStr = '[' .. GetPlayerServerId(pid) .. ']' .. ' ' .. playerName
+            local playerStr = playerEntities[serverId].name or (
+                '[' .. GetPlayerServerId(pid) .. ']' .. ' ' .. string.sub(
+                    GetPlayerName(serverId) or 'unknown', 1, 75
+                )
+            )
             playerGamerTags[pid] = {
                 gamerTag = CreateFakeMpGamerTag(targetPed, playerStr, false, false, 0),
                 ped = targetPed
@@ -138,12 +199,33 @@ local function showGamerTags()
         end
         local targetTag = playerGamerTags[pid].gamerTag
 
-        -- Distance Check
+        -- Distance Check for overhead tags
         local targetPedCoords = GetEntityCoords(targetPed)
         if #(targetPedCoords - curCoords) <= distanceToCheck then
             setGamerTagFunc(targetTag, pid)
         else
             clearGamerTagFunc(targetTag)
+        end
+
+        if myPid ~= targetPed then
+            if not playerEntities[serverId] then
+                playerEntities[serverId] = {
+                    coords = targetPedCoords,
+                    health = GetEntityHealth(targetPed),
+                    blipHandle = nil
+                }
+            else
+                playerEntities[serverId].coords = targetPedCoords
+                playerEntities[serverId].health = GetEntityHealth(targetPed)
+            end
+
+            updatePlayerBlip(serverId, playerEntities[serverId], targetPed)
+        end
+    end
+
+    for id, data in pairs(playerEntities) do
+        if not localActiveServerIds[id] then
+            updatePlayerBlip(id, data, nil)
         end
     end
 end
@@ -188,6 +270,47 @@ end
 RegisterNetEvent('txcl:showPlayerIDs', function(enabled)
     debugPrint('Received showPlayerIDs event')
     toggleShowPlayerIDs(enabled, true)
+end)
+
+RegisterNetEvent('txcl:playerBlipsUpdate', function (payload)
+    local newPlayerEntities = {}
+
+    for i = 1, #payload do
+        local data = payload[i]
+        local playerId = data[1]
+
+        newPlayerEntities[playerId] = {
+            coords = vector3(data[2], data[3], data[4]),
+            health = data[5],
+            name = data[6]
+        }
+    end
+
+    for playerId, data in pairs(newPlayerEntities) do
+        if playerEntities[playerId] then
+            playerEntities[playerId].coords = data.coords
+            playerEntities[playerId].health = data.health
+        else
+            playerEntities[playerId] = {
+                coords = data.coords,
+                health = data.health,
+                blipHandle = nil,
+                name = data.name
+            }
+        end
+    end
+
+    for playerId, entityData in pairs(playerEntities) do
+        if not newPlayerEntities[playerId] then
+            if entityData.blipHandle and DoesBlipExist(entityData.blipHandle) then
+                RemoveBlip(entityData.blipHandle)
+            end
+
+            playerEntities[playerId] = nil
+        end
+    end
+
+    print('blip update', json.encode(playerEntities, {indent=true}))
 end)
 
 --- Sends perms request to the server to enable player ids
