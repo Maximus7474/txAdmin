@@ -52,7 +52,7 @@ TX_MENU_ENABLED = GetConvarBool('txAdmin-menuEnabled')
 -- Setting global debug variable for all files
 -- On the client, this is updated by receiving a `txcl:setDebugMode` event.
 -- On the server, this is updated by running txaSetDebugMode on Live Console
-TX_DEBUG_MODE = GetConvarBool('txAdmin-debugMode')
+TX_DEBUG_MODE = GetConvarBool('txAdmin-debugMode', true)
 
 
 --- Internal helper to format txAdmin console messages
@@ -97,6 +97,17 @@ function tableIndexOf(tgtTable, value)
   return -1
 end
 
+---@param t table
+---@param value any
+function table.contains(t, value)
+  for i = 1, #t do
+    if t[i] == value then
+      return true
+    end
+  end
+
+  return false
+end
 
 ---Shortcut for calculating a ped % health
 ---@param ped any
