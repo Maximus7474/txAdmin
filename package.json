@@ -11,14 +11,14 @@
     "shared"
   ],
   "scripts": {
-    "build": "bunx rimraf dist tmp_core_tsc && bun run build --filter nui && bun run build --filter panel && bun run build --filter core && bun run license:distfile",
-    "test": "bun test",
-    "typecheck": "bun run --filter '*' typecheck",
-    "locale:rebase": "bun scripts/locale-utils.js rebase",
-    "locale:check": "bun scripts/locale-utils.js check --color",
-    "license:report": "bunx rimraf .reports/license && mkdir \".reports/license\" && bun run --filter '*' license:report",
-    "license:list": "bun scripts/list-licenses.js",
-    "license:distfile": "bunx generate-license-file --ci --no-spinner --input package.json --output dist/THIRD-PARTY-LICENSES.txt"
+    "build": "rimraf dist tmp_core_tsc && npm run build -w nui && npm run build -w panel && npm run build -w core && npm run license:distfile",
+    "test": "npm run test --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "locale:rebase": "node scripts/locale-utils.js rebase",
+    "locale:check": "node scripts/locale-utils.js check --color",
+    "license:report": "rimraf .reports/license && mkdir \".reports/license\" && npm run license:report --workspaces",
+    "license:list": "node scripts/list-licenses.js",
+    "license:distfile": "generate-license-file --ci --no-spinner --input package.json --output dist/THIRD-PARTY-LICENSES.txt"
   },
   "repository": {
     "type": "git",
