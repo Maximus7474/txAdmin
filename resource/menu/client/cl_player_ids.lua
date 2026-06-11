@@ -273,6 +273,8 @@ RegisterNetEvent('txcl:showPlayerIDs', function(enabled)
 end)
 
 RegisterNetEvent('txcl:playerBlipsUpdate', function (payload)
+    debugPrint('Received playerBlipsUpdate event')
+
     local newPlayerEntities = {}
 
     for i = 1, #payload do
@@ -310,7 +312,7 @@ RegisterNetEvent('txcl:playerBlipsUpdate', function (payload)
         end
     end
 
-    print('blip update', json.encode(playerEntities, {indent=true}))
+    debugPrint('Parsed playerBlipsUpdate event payload')
 end)
 
 --- Sends perms request to the server to enable player ids

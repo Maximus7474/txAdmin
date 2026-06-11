@@ -160,8 +160,8 @@ Citizen.CreateThread(function(threadId)
         end
       end
 
-      print('Sending blip payload update to', #ACTIVE_PLAYERID_SOURCES, 'admins', json.encode(ACTIVE_PLAYERID_SOURCES))
-      print('payload', json.encode(payload))
+      debugPrint('Sending blip payload update to', #ACTIVE_PLAYERID_SOURCES, 'admins', json.encode(ACTIVE_PLAYERID_SOURCES))
+
 
       for i = 1, #ACTIVE_PLAYERID_SOURCES do
         TriggerClientEvent('txcl:playerBlipsUpdate', ACTIVE_PLAYERID_SOURCES[i], payload)
