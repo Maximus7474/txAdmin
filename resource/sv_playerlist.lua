@@ -136,14 +136,15 @@ end)
 
 --[[ Handle player Join or Leave ]]
 AddEventHandler('playerJoining', function(srcString, _oldID)
+    local src = source
     -- sanity checking source
-    if source <= 0 then
-        logError('playerJoining event with source ' .. json.encode(source))
+    if src <= 0 then
+        logError('playerJoining event with source ' .. json.encode(src))
         return
     end
 
     -- checking if the player was not already dropped
-    local playerDetectedName = GetPlayerName(source)
+    local playerDetectedName = GetPlayerName(src)
     if type(playerDetectedName) ~= 'string' then
         logError('Received a playerJoining for a player that was already dropped. There is some resource dropping the player at the playerJoining event handler without first waiting for the next tick.')
         return
@@ -151,13 +152,13 @@ AddEventHandler('playerJoining', function(srcString, _oldID)
 
     local playerData = {
         name = sub(playerDetectedName or "unknown", 1, 128),
-        ids = GetPlayerIdentifiers(source),
-        hwids = GetPlayerTokens(source),
+        ids = GetPlayerIdentifiers(src),
+        hwids = GetPlayerTokens(src),
     }
     PrintStructuredTrace(json.encode({
         type = 'txAdminPlayerlistEvent',
         event = 'playerJoining',
-        id = source,
+        id = src,
         player = playerData
     }))
 

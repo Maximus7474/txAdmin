@@ -404,6 +404,8 @@ end
 -- MARK: Player connecting handler
 -- =============================================
 local function handleConnections(name, setKickReason, d)
+    local player = source
+
     -- if server is shutting down
     if TX_IS_SERVER_SHUTTING_DOWN then
         CancelEvent()
@@ -411,7 +413,6 @@ local function handleConnections(name, setKickReason, d)
         return
     end
 
-    local player = source
     if GetConvarBool("txAdmin-checkPlayerJoin") then
         d.defer()
         Wait(0)
