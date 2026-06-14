@@ -134,6 +134,8 @@ export const getFxSpawnVariables = (): FxSpawnVariables => {
         '+setr', 'txAdmin-menuEnabled', txConfig.gameFeatures.menuEnabled,
         '+set', 'txAdmin-luaComHost', txCoreEndpoint,
         '+set', 'txAdmin-luaComToken', txCore.webServer.luaComToken,
+        '+set', 'txAdmin-discordBotToken', txConfig.discordBot.token ?? "nil",
+        '+set', 'txAdmin-discordGuildId', txConfig.discordBot.guild ?? "nil",
         '+set', 'txAdminServerMode', 'true', //Can't change this one due to fxserver code compatibility
         '+exec', txConfig.server.cfgPath,
     ].flat(2).map(String);
