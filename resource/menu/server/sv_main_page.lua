@@ -106,7 +106,7 @@ end)
 local ACTIVE_PLAYERID_SOURCES = {}
 local lastPayload = {}
 
-local GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName = GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth, GetPlayerName
+local GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth = GetPlayers, GetPlayerPed, GetEntityCoords, GetEntityHealth
 
 local function GeneratePlayerPayload()
   local players <const> = GetPlayers()
