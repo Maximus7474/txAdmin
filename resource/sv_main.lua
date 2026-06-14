@@ -51,6 +51,14 @@ CreateThread(function()
     SetConvar("txAdmin-luaComToken", TX_LUACOMTOKEN)
 end)
 
+local rawToken = GetConvar("txAdmin-discordBotToken", "nil")
+local rawGuild = GetConvar("txAdmin-discordGuildId", "nil")
+
+TX_DISCORDBOTTOKEN = (rawToken ~= "nil" and #rawToken >= 70) and rawToken or false
+TX_DISCORDGUILDID = (rawGuild ~= "nil" and #rawGuild >= 18) and rawGuild or false
+
+SetConvar("txAdmin-discordBotToken", "removed")
+SetConvar("txAdmin-discordGuildId", "removed")
 
 -- =============================================
 -- MARK: Heartbeat functions
@@ -467,6 +475,60 @@ local function handleConnections(name, setKickReason, d)
     end
 end
 
+local nativeGetPlayerName = GetPlayerName
+
+local nameCache = {}
+
+---Fetches the player's Discord name/nickname from the guild.
+---Falls back to native name if Discord fetch fails.
+---@param src integer
+---@return string
+function GetPlayerName(src)
+    if not TX_DISCORDBOTTOKEN or not TX_DISCORDGUILDID then
+        return nativeGetPlayerName(src)
+    end
+
+    if nameCache[src] then
+        return nameCache[src]
+    end
+
+    local rawIdentifier = GetPlayerIdentifierByType(tostring(src), 'discord')
+    if not rawIdentifier then 
+        return nativeGetPlayerName(src)
+    end
+
+    local discordIdentifier = string.match(rawIdentifier, "discord:(%d+)")
+    if not discordIdentifier then
+        return nativeGetPlayerName(src)
+    end
+
+    local endpoint = string.format("https://discord.com/api/v10/guilds/%s/members/%s", TX_DISCORDGUILDID, discordIdentifier)
+
+    local namePromise = promise.new()
+
+    PerformHttpRequest(endpoint, function(statusCode, responseBody, headers)
+        if statusCode == 200 and responseBody then
+            local memberData = json.decode(responseBody)
+            local discordName = memberData.nick or (memberData.user and memberData.user.global_name) or (memberData.user and memberData.user.username)
+
+            if discordName then
+                namePromise:resolve(discordName)
+            end
+        else
+            logError(("^1[Discord Error] Failed to fetch member. HTTP Status Code: %s^7"):format(statusCode))
+            namePromise:resolve(nativeGetPlayerName(src))
+        end
+    end, "GET", "", {
+        ["Authorization"] = "Bot " .. TX_DISCORDBOTTOKEN,
+        ["Content-Type"] = "application/json"
+    })
+
+    local name = Citizen.Await(namePromise)
+
+    nameCache[src] = name
+
+    return name
+end
 
 -- =============================================
 -- MARK: Setup threads and commands & main stuff
