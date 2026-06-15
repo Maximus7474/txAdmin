@@ -136,5 +136,7 @@ CreateThread(function()
   -- sometimes prevents debugPrint lmao
   Wait(0)
   syncServerCtx()
+
+  Wait(30000)
   txPrint("Bienvunue Paris Interceptor sur votre serveur")
 end)
